@@ -33,13 +33,13 @@
             </div>
 
             <div class="mb-4">
-                <label for="fornecedor_id" class="block text-gray-700 font-semibold mb-2">Fornecedor:</label>
-                <select id="fornecedor_id" name="fornecedor_id" required class="block w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Selecione um fornecedor</option>
-                    @foreach($fornecedores as $fornecedor)
-                        <option value="{{ $fornecedor->id }}">{{ $fornecedor->nome }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-gray-700 font-semibold mb-2">Fornecedores:</label>
+                @foreach($fornecedores as $fornecedor)
+                    <div class="flex items-center mb-2">
+                        <input type="checkbox" name="fornecedores[]" value="{{ $fornecedor->id }}" id="fornecedor-{{ $fornecedor->id }}" class="mr-2">
+                        <label for="fornecedor-{{ $fornecedor->id }}">{{ $fornecedor->nome }}</label>
+                    </div>
+                @endforeach
             </div>
 
             <button type="submit" class="w-full bg-blue-600 text-white font-semibold rounded-lg p-2 hover:bg-blue-700 transition">

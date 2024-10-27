@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Fornecedor;
 use App\Models\Produto;
 use Illuminate\Http\Request;
+use Log;
 
 class ProdutoController extends Controller
 {
@@ -15,23 +16,25 @@ class ProdutoController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {   
+    {
+        $query = Produto::with('fornecedores');
 
-        $query = Produto::query();
-
-        if ($request->has('nomeSearch') && $request->search != '') {
+        if ($request->has('search') && $request->search != '') {
             $query->where('nome', 'LIKE', '%' . $request->search . '%');
         }
 
-        if ($request->has('fornecedorSearch') && $request->search != '') {
-            $query->where('fornecedor_id', 'LIKE', '%' . $request->search . '%');
+        
+        if ($request->has('fornecedor_search') && $request->fornecedor_search != '') {
+            $query->whereHas('fornecedores', function ($q) use ($request) {
+                $q->where('nome', 'LIKE', '%' . $request->fornecedor_search . '%');
+            });
         }
 
+        $produtos = $query->get();
 
-
-        $produtos = Produto::all();
-        return view("produtos.index", ["produtos" => $produtos]);
+        return view('produtos.index', compact('produtos'));
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -39,7 +42,7 @@ class ProdutoController extends Controller
     public function create()
     {
         $fornecedores = Fornecedor::all();
-        return view('produtos.create', compact('fornecedores')); 
+        return view('produtos.create', compact('fornecedores'));
     }
 
     /**
@@ -49,16 +52,20 @@ class ProdutoController extends Controller
     {
         // Validação dos dados
         $request->validate([
-            'fornecedor_id' => 'required|exists:fornecedores,id',
             'nome' => 'required|string|max:255',
-            'descricao' => 'nullable|string|max:255',
+            'descricao' => 'nullable|string',
             'preco' => 'required|numeric',
+            'fornecedores' => 'required|array',
+            'fornecedores.*' => 'exists:fornecedores,id',
         ]);
 
+        
+        $produto = Produto::create($request->only(['nome', 'descricao', 'preco']));
 
-        Produto::create($request->all());
+        
+        $produto->fornecedores()->sync($request->fornecedores);
 
-        return redirect()->route('produtos.index')->with('success', 'Produto cadastrado com sucesso!');
+        return redirect()->route('produtos.index')->with('success', 'Produto criado com sucesso!');
     }
 
 
@@ -86,21 +93,41 @@ class ProdutoController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'fornecedor_id' => 'required|exists:fornecedores,id',
+            'fornecedores' => 'required|array', 
+            'fornecedores.*' => 'exists:fornecedores,id', 
             'nome' => 'required|string|max:255',
             'descricao' => 'nullable|string|max:255',
             'preco' => 'required|numeric',
         ]);
-
-
+    
         $produto = Produto::find($id);
-
+    
         if ($produto) {
-            $produto->update($request->all());
-
+           
+            $produto->update($request->only(['nome', 'descricao', 'preco'])); 
+    
+           
+            $produto->fornecedores()->sync($request->fornecedores);
+    
             return redirect()->route("produtos.index")->with("success", "Produto atualizado com sucesso!");
         }
-
+    
         return redirect()->route("produtos.index")->with("error", "Produto não encontrado.");
     }
+
+
+    public function destroy(Request $request)
+    {
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:produtos,id',
+        ]);
+
+
+        Produto::destroy($request->ids);
+
+        return redirect()->route('produtos.index')->with('success', 'Produtos excluídos com sucesso!');
+    }
+
 }

@@ -15,7 +15,7 @@ class FornecedorController extends Controller
     {
         $query = Fornecedor::query();
 
-       
+
         if ($request->has('search') && $request->search != '') {
             $query->where('nome', 'LIKE', '%' . $request->search . '%');
         }
@@ -100,12 +100,17 @@ class FornecedorController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-        $fornecedor = Fornecedor::find($id);
-        $fornecedor->delete();
-        return redirect()->route('fornecedores.index')->with('success', 'fornecedor deletado');
-    }
+        public function destroy(Request $request)
+        {
+            $request->validate([
+                'ids' => 'required|array',
+                'ids.*' => 'exists:fornecedores,id',
+            ]);
+        
+            Fornecedor::destroy($request->ids);
+
+            return redirect()->route('fornecedores.index')->with('success', 'fornecedor deletado');
+        }
 
     public function search(Request $request)
     {

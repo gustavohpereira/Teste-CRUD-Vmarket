@@ -12,11 +12,10 @@ class Produto extends Model
         'nome',
         'descricao',
         'preco',
-        'fornecedor_id',
     ];
 
-    public function fornecedor()
+    public function fornecedores()
     {
-        return $this->belongsTo(Fornecedor::class);
+        return $this->belongsToMany(Fornecedor::class, 'fornecedor_produto');
     }
 }
