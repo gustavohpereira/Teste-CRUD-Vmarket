@@ -14,8 +14,21 @@ class ProdutoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
+    public function index(Request $request)
+    {   
+
+        $query = Produto::query();
+
+        if ($request->has('nomeSearch') && $request->search != '') {
+            $query->where('nome', 'LIKE', '%' . $request->search . '%');
+        }
+
+        if ($request->has('fornecedorSearch') && $request->search != '') {
+            $query->where('fornecedor_id', 'LIKE', '%' . $request->search . '%');
+        }
+
+
+
         $produtos = Produto::all();
         return view("produtos.index", ["produtos" => $produtos]);
     }
@@ -26,7 +39,7 @@ class ProdutoController extends Controller
     public function create()
     {
         $fornecedores = Fornecedor::all();
-        return view('produtos.create', compact('fornecedores')); // Passa os fornecedores para a view
+        return view('produtos.create', compact('fornecedores')); 
     }
 
     /**
@@ -62,7 +75,9 @@ class ProdutoController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $produto = Produto::find($id);
+        $fornecedores = Fornecedor::all();
+        return view('produtos.edit', compact('produto', 'fornecedores'));
     }
 
     /**
@@ -70,20 +85,22 @@ class ProdutoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $updated = $this->produto->update()->where("id", $id)->update($request->all());
+        $request->validate([
+            'fornecedor_id' => 'required|exists:fornecedores,id',
+            'nome' => 'required|string|max:255',
+            'descricao' => 'nullable|string|max:255',
+            'preco' => 'required|numeric',
+        ]);
 
-        if ($updated) {
-            return redirect()->route("produto")->with("success", "");
+
+        $produto = Produto::find($id);
+
+        if ($produto) {
+            $produto->update($request->all());
+
+            return redirect()->route("produtos.index")->with("success", "Produto atualizado com sucesso!");
         }
 
-        return redirect()->route("produto")->with("error", "");
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route("produtos.index")->with("error", "Produto não encontrado.");
     }
 }

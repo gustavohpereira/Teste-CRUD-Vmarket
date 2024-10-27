@@ -10,6 +10,7 @@ Route::get('/', function () {
 
 
 Route::resource('fornecedores', FornecedorController::class);
+Route::get('fornecedores/busca', [FornecedorController::class, 'search'])->name('fornecedores.search');
 
 
 Route::resource('produtos', ProdutoController::class);

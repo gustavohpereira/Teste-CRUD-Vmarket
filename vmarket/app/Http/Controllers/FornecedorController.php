@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Fornecedor;
 use Illuminate\Http\Request;
+use Log;
 
 class FornecedorController extends Controller
 {
@@ -12,10 +13,17 @@ class FornecedorController extends Controller
      */
     public function index(Request $request)
     {
-        $fornecedores = Fornecedor::all();
+        $query = Fornecedor::query();
+
+       
+        if ($request->has('search') && $request->search != '') {
+            $query->where('nome', 'LIKE', '%' . $request->search . '%');
+        }
+
+        $fornecedores = $query->get();
+
         return view("fornecedores.index", compact("fornecedores"));
     }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -38,7 +46,6 @@ class FornecedorController extends Controller
             'telefone' => 'nullable|string|max:15',
         ]);
 
-        // Criação do fornecedor
         Fornecedor::create($validatedData);
 
         return redirect()->route('fornecedores.index')->with('success', 'Fornecedor criado');
@@ -59,31 +66,36 @@ class FornecedorController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Fornecedor $fornecedor)
+    public function edit(string $id)
     {
-        return view('fornecedores.edit', ['fornecedor' => $fornecedor]);
+        $fornecedor = Fornecedor::find($id);
+
+        return view('fornecedores.edit', compact('fornecedor'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Fornecedor $fornecedor)
+    public function update(Request $request, string $id)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'nome' => 'required|string|max:255',
-            'email' => 'required|email|unique:fornecedores,email,' . $fornecedor->id,
-            'cnpj' => 'required|string|unique:fornecedores,cnpj,' . $fornecedor->id,
+            'email' => 'required|email',
             'categoria' => 'required|string|max:255',
             'uf' => 'required|string|size:2',
             'telefone' => 'nullable|string|max:15',
         ]);
 
-        // Atualiza o fornecedor
-        $fornecedor->update($validatedData);
+        $fornecedor = Fornecedor::find($id);
 
-        return redirect()->route('fornecedores.index')->with('success', 'Fornecedor atualizado');
+        if ($fornecedor) {
+            $fornecedor->update($request->all());
+
+            return redirect()->route("fornecedores.index")->with("success", "Fornecedor atualizado com sucesso!");
+        }
+
+        return redirect()->route("fornecedores.index")->with("error", "Fornecedor não encontrado.");
     }
-
 
     /**
      * Remove the specified resource from storage.
@@ -93,5 +105,14 @@ class FornecedorController extends Controller
         $fornecedor = Fornecedor::find($id);
         $fornecedor->delete();
         return redirect()->route('fornecedores.index')->with('success', 'fornecedor deletado');
+    }
+
+    public function search(Request $request)
+    {
+        $searchTerm = $request->input('nome');
+
+        $fornecedores = Fornecedor::where('nome', 'like', '%' . $searchTerm . '%')->get();
+
+        return view('fornecedores.index', compact('fornecedores'));
     }
 }
